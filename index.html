@@ -173,54 +173,82 @@
         padding: 1rem;
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        gap: 0.65rem;
         background: var(--c-deep);
       }
+      .msg-row {
+        display: grid;
+        column-gap: 0.65rem;
+        align-items: end;
+        width: 100%;
+        max-width: min(calc(100% - 0.25rem), 92vw, 88rem);
+        box-sizing: border-box;
+      }
+      .msg-row.in,
+      .msg-row.ai {
+        grid-template-columns: 2.5rem minmax(0, 1fr);
+        align-self: flex-start;
+      }
+      .msg-row.out {
+        grid-template-columns: minmax(0, 1fr) 2.5rem;
+        width: fit-content;
+        align-self: flex-end;
+      }
+      .msg-row.out .avatar {
+        grid-column: 2;
+      }
+      .msg-row.out .msg {
+        grid-column: 1;
+        justify-self: end;
+      }
+      .avatar {
+        flex-shrink: 0;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        border: 3px solid #fcf4d4;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0;
+        color: rgba(255, 255, 255, 0.96);
+        text-shadow: 0 1px 3px rgba(15, 30, 40, 0.45);
+      }
+      .avatar span {
+        line-height: 1;
+        user-select: none;
+      }
       .msg {
-        max-width: min(92%, 40rem);
-        padding: 0.55rem 0.75rem;
+        min-width: 0;
+        width: fit-content;
+        max-width: 100%;
+        padding: 0.65rem 1.05rem;
         border-radius: 12px;
         font-size: 0.92rem;
+        line-height: 1.55;
         white-space: pre-wrap;
-        word-break: break-word;
+        word-break: normal;
+        overflow-wrap: break-word;
+        box-sizing: border-box;
       }
       .msg.in {
-        align-self: flex-start;
         background: var(--c-mid);
         border: 1px solid var(--c-light);
         border-bottom-left-radius: 4px;
       }
       .msg.out {
-        align-self: flex-end;
         background: var(--c-deep);
         border: 1px solid var(--c-light);
         border-bottom-right-radius: 4px;
       }
       .msg.ai {
-        align-self: flex-start;
         background: var(--c-mid);
         border: 1px solid var(--c-cream);
         border-bottom-left-radius: 4px;
-      }
-      .msg .meta {
-        font-size: 0.68rem;
-        color: var(--c-light);
-        margin-bottom: 0.25rem;
-        font-family: var(--font-mono);
-        letter-spacing: 0.03em;
-      }
-      .msg .ack {
-        font-weight: 600;
-      }
-      .msg .ack.pending {
-        color: var(--c-light);
-      }
-      .msg .ack.ok {
-        color: var(--c-cream);
-      }
-      .msg .ack.fail {
-        color: var(--c-cream);
-        opacity: 0.85;
       }
       .msg.system {
         align-self: center;
@@ -230,6 +258,7 @@
         color: var(--c-light);
         font-size: 0.78rem;
         text-align: center;
+        padding: 0.45rem 0.65rem;
       }
       .composer {
         flex-shrink: 0;
@@ -237,19 +266,23 @@
         border-top: 1px solid var(--c-light);
         background: var(--c-mid);
         display: flex;
-        flex-direction: column;
-        gap: 0.45rem;
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 0.55rem;
       }
       .composer textarea {
-        min-height: 3rem;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+        min-height: 2.75rem;
         max-height: 10rem;
         resize: vertical;
       }
-      .composer .actions {
-        display: flex;
-        gap: 0.45rem;
-        justify-content: flex-end;
-        flex-wrap: wrap;
+      .composer .primary {
+        flex-shrink: 0;
+        align-self: flex-end;
+        height: 2.75rem;
+        padding-inline: 1rem;
       }
       .name-gate {
         position: fixed;
@@ -288,6 +321,70 @@
       }
       .name-gate-card button.primary {
         width: 100%;
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          padding: 0.5rem 0.65rem;
+          gap: 0.5rem;
+        }
+        .topbar h1 {
+          font-size: 0.88rem;
+          letter-spacing: 0.07em;
+        }
+        .pill {
+          font-size: 0.62rem;
+          padding: 0.22rem 0.48rem;
+        }
+        .display-badge {
+          font-size: 0.58rem;
+          margin-left: 0.3rem;
+        }
+        #chat {
+          padding: 0.55rem 0.6rem;
+          gap: 0.5rem;
+        }
+        .msg-row {
+          max-width: 100%;
+          column-gap: 0.45rem;
+        }
+        .msg-row.in,
+        .msg-row.ai {
+          grid-template-columns: 2.25rem minmax(0, 1fr);
+        }
+        .msg-row.out {
+          grid-template-columns: minmax(0, 1fr) 2.25rem;
+        }
+        .avatar {
+          width: 2.25rem;
+          height: 2.25rem;
+          font-size: 0.92rem;
+        }
+        .msg {
+          font-size: 0.88rem;
+          padding: 0.5rem 0.8rem;
+          border-radius: 10px;
+        }
+        .composer {
+          padding: 0.5rem 0.6rem;
+          padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+          gap: 0.45rem;
+        }
+        .composer textarea {
+          font-size: 1rem;
+        }
+        .composer .primary {
+          min-height: 2.75rem;
+          height: auto;
+          min-width: 4.5rem;
+        }
+        .name-gate {
+          padding: 0.65rem;
+          padding-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+        }
+        .name-gate-card {
+          padding: 1rem 1rem;
+        }
       }
     </style>
   </head>
@@ -337,9 +434,7 @@
         placeholder="Message…"
         disabled
       ></textarea>
-      <div class="actions">
-        <button type="button" class="primary" id="btnSend" disabled>Send</button>
-      </div>
+      <button type="button" class="primary" id="btnSend" disabled>Send</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.3/dist/mqtt.min.js" crossorigin="anonymous"></script>
@@ -519,48 +614,78 @@
           return parts.length ? parts.join(" | ") : String(err);
         }
 
-        function appendChat(kind, meta, body) {
-          var div = document.createElement("div");
-          div.className = "msg " + kind;
-          if (kind === "system") {
-            div.textContent = body;
-          } else {
-            var m = document.createElement("div");
-            m.className = "meta";
-            m.textContent = meta;
-            div.appendChild(m);
-            var b = document.createElement("div");
-            b.textContent = body;
-            div.appendChild(b);
-          }
-          chatEl.appendChild(div);
+        function hashStr(s) {
+          var t = String(s || "");
+          var h = 5381;
+          for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+          return Math.abs(h);
+        }
+
+        function firstInitial(name) {
+          var t = String(name || "").trim();
+          if (!t) return "?";
+          var cp = t.codePointAt(0);
+          var ch = String.fromCodePoint(cp);
+          return ch.toLocaleUpperCase();
+        }
+
+        function avatarSolidColorForUser(userKey) {
+          var h = hashStr(String(userKey || "?"));
+          var hue = 204 + (h % 26);
+          var sat = 14 + ((h >> 4) % 14);
+          var lit = 38 + ((h >> 7) % 16);
+          return "hsl(" + hue + ", " + sat + "%, " + lit + "%)";
+        }
+
+        function makeAvatarEl(userKey) {
+          var el = document.createElement("div");
+          el.className = "avatar";
+          el.setAttribute("aria-hidden", "true");
+          el.style.background = avatarSolidColorForUser(userKey);
+          var span = document.createElement("span");
+          span.textContent = firstInitial(userKey);
+          el.appendChild(span);
+          return el;
+        }
+
+        function appendMessageWithAvatar(kind, body, userKey) {
+          var row = document.createElement("div");
+          row.className = "msg-row " + kind;
+          row.appendChild(makeAvatarEl(userKey));
+          var bubble = document.createElement("div");
+          bubble.className = "msg " + kind;
+          bubble.textContent = body;
+          row.appendChild(bubble);
+          chatEl.appendChild(row);
           chatEl.scrollTop = chatEl.scrollHeight;
         }
 
-        function appendOutgoingChat(topic, body, label) {
-          var div = document.createElement("div");
-          div.className = "msg out";
-          var meta = document.createElement("div");
-          meta.className = "meta";
-          var ack = document.createElement("span");
-          ack.className = "ack pending";
-          ack.textContent = "Pending…";
-          meta.appendChild(document.createTextNode((label || "You") + " · " + topic + " · "));
-          meta.appendChild(ack);
-          div.appendChild(meta);
-          var b = document.createElement("div");
-          b.textContent = body;
-          div.appendChild(b);
-          chatEl.appendChild(div);
+        function appendChat(kind, meta, body) {
+          if (kind === "system") {
+            var div = document.createElement("div");
+            div.className = "msg system";
+            div.textContent = body;
+            chatEl.appendChild(div);
+            chatEl.scrollTop = chatEl.scrollHeight;
+            return;
+          }
+          appendMessageWithAvatar(kind, body, meta);
+        }
+
+        function appendOutgoingChat(body, userKey) {
+          var row = document.createElement("div");
+          row.className = "msg-row out";
+          row.appendChild(makeAvatarEl(userKey));
+          var bubble = document.createElement("div");
+          bubble.className = "msg out";
+          bubble.textContent = body;
+          row.appendChild(bubble);
+          chatEl.appendChild(row);
           chatEl.scrollTop = chatEl.scrollHeight;
           return {
-            setDelivered: function () {
-              ack.className = "ack ok";
-              ack.textContent = "Delivered";
-            },
+            setDelivered: function () {},
             setFailed: function (msg) {
-              ack.className = "ack fail";
-              ack.textContent = "Failed — " + (msg || "publish error");
+              appendChat("system", "", msg || "Send failed");
             },
           };
         }
@@ -588,7 +713,7 @@
 
         function publishJson(topic, displayText, jsonBody, bubbleLabel) {
           if (!client || !client.connected) return;
-          var bubble = appendOutgoingChat(topic, displayText, bubbleLabel);
+          var bubble = appendOutgoingChat(displayText, bubbleLabel);
           lastSentBody = jsonBody;
           lastSentAt = Date.now();
           client.publish(topic, jsonBody, { qos: 1 }, function (err) {
@@ -609,13 +734,9 @@
               if (rawStr === lastSentBody && Date.now() - lastSentAt < 2500) return;
             }
             if (parsed.kind === "ai") {
-              appendChat(
-                "ai",
-                "AI" + (parsed.model ? " · " + parsed.model : "") + " · " + t,
-                parsed.text
-              );
+              appendMessageWithAvatar("ai", parsed.text, "AI");
             } else {
-              appendChat("in", parsed.from + " · " + t, parsed.text);
+              appendMessageWithAvatar("in", parsed.text, parsed.from);
             }
           });
 
