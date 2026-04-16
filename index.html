@@ -109,26 +109,16 @@
         color: var(--c-cream);
         border-color: var(--c-cream);
       }
-      details.settings {
-        flex-shrink: 0;
-        border-bottom: 1px solid var(--c-light);
-        background: var(--c-mid);
-      }
-      details.settings > summary {
-        list-style: none;
-        cursor: pointer;
-        padding: 0.45rem 1rem;
-        font-size: 0.78rem;
-        color: var(--c-cream);
-        user-select: none;
-      }
-      details.settings > summary::-webkit-details-marker {
-        display: none;
-      }
-      .settings-inner {
-        padding: 0 1rem 0.65rem;
-        display: grid;
-        gap: 0.45rem;
+      .mqtt-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
       label {
         font-family: var(--font-mono);
@@ -150,22 +140,6 @@
         color: var(--c-cream);
         font-size: 0.82rem;
         font-family: inherit;
-      }
-      .row2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.45rem;
-      }
-      @media (max-width: 520px) {
-        .row2 {
-          grid-template-columns: 1fr;
-        }
-      }
-      .settings-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        margin-top: 0.2rem;
       }
       button {
         font-family: var(--font-ui);
@@ -191,9 +165,6 @@
         background: var(--c-cream);
         color: var(--c-deep);
         border-color: var(--c-cream);
-      }
-      button.ghost {
-        background: transparent;
       }
       #chat {
         flex: 1;
@@ -345,62 +316,17 @@
 
     <header class="topbar">
       <h1>Paradox Chatroom<span class="display-badge" id="displayBadge"></span></h1>
-      <span class="pill disconnected" id="pill" title="MQTT"
+      <span class="pill disconnected" id="pill" title="Connection"
         ><i></i> <span id="pillText">Disconnected</span></span
       >
     </header>
 
-    <details class="settings">
-      <summary>Settings</summary>
-      <div class="settings-inner">
-        <div>
-          <label for="mqttUrl">Broker WSS URL</label>
-          <input id="mqttUrl" type="text" spellcheck="false" autocomplete="off" />
-        </div>
-        <div class="row2">
-          <div>
-            <label for="mqttUser">Username</label>
-            <input id="mqttUser" type="text" autocomplete="username" />
-          </div>
-          <div>
-            <label for="mqttPass">Password</label>
-            <input id="mqttPass" type="password" autocomplete="current-password" />
-          </div>
-        </div>
-        <div>
-          <label for="mqttTopic">Topic</label>
-          <input id="mqttTopic" type="text" spellcheck="false" autocomplete="off" placeholder="shared topic" />
-        </div>
-        <div class="settings-actions">
-          <button type="button" class="primary" id="btnMqttConnect">Connect</button>
-          <button type="button" id="btnMqttDisconnect">Disconnect</button>
-          <button type="button" class="ghost" id="btnClearChat">Clear</button>
-        </div>
-        <div>
-          <label for="geminiMode">Gemini</label>
-          <select id="geminiMode">
-            <option value="direct">Direct (Google)</option>
-            <option value="gateway">Gateway URL</option>
-          </select>
-        </div>
-        <div id="wrapGateway" style="display: none">
-          <label for="gatewayUrl">Gateway URL</label>
-          <input id="gatewayUrl" type="url" autocomplete="off" />
-        </div>
-        <div id="wrapDirect">
-          <div class="row2">
-            <div>
-              <label for="geminiKey">API key</label>
-              <input id="geminiKey" type="password" autocomplete="off" />
-            </div>
-            <div>
-              <label for="geminiModel">Model</label>
-              <input id="geminiModel" type="text" value="gemini-2.0-flash" spellcheck="false" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
+    <div class="mqtt-hidden" aria-hidden="true">
+      <input id="mqttUrl" type="text" tabindex="-1" autocomplete="off" />
+      <input id="mqttUser" type="text" tabindex="-1" autocomplete="off" />
+      <input id="mqttPass" type="password" tabindex="-1" autocomplete="off" />
+      <input id="mqttTopic" type="text" tabindex="-1" autocomplete="off" />
+    </div>
 
     <div id="chat" aria-live="polite"></div>
 
@@ -412,7 +338,6 @@
         disabled
       ></textarea>
       <div class="actions">
-        <button type="button" id="btnGemini" disabled>Gemini</button>
         <button type="button" class="primary" id="btnSend" disabled>Send</button>
       </div>
     </div>
@@ -435,36 +360,76 @@
         var nameGateEl = $("nameGate");
         var displayBadgeEl = $("displayBadge");
 
-        function loadMqttLocalConfig() {
-          return fetch("./mqtt-config.local.json", { cache: "no-store" })
-            .then(function (r) {
-              if (!r.ok) return null;
-              return r.json();
-            })
-            .then(function (cfg) {
-              if (!cfg || typeof cfg !== "object") return;
-              if (typeof cfg.brokerUrl === "string" && cfg.brokerUrl.trim())
-                $("mqttUrl").value = cfg.brokerUrl.trim();
-              if (typeof cfg.username === "string") $("mqttUser").value = cfg.username;
-              if (typeof cfg.password === "string") $("mqttPass").value = cfg.password;
-              if (typeof cfg.topic === "string" && cfg.topic.trim())
-                $("mqttTopic").value = cfg.topic.trim();
-            })
-            .catch(function () {});
+        var BUILTIN_MQTT = {
+          brokerUrl: "wss://2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud:8884/mqtt",
+          username: "test2",
+          password: "Aa123456",
+          topic: "blackout/mqtest/chat",
+        };
+
+        function applyMqttCfg(cfg, onlyFillEmpty) {
+          if (!cfg || typeof cfg !== "object") return;
+          function setField(id, val) {
+            if (val == null || val === "") return;
+            var s = typeof val === "string" ? val : String(val);
+            if (!s.trim()) return;
+            var el = $(id);
+            if (!el) return;
+            if (onlyFillEmpty && String(el.value).trim()) return;
+            el.value = s;
+          }
+          if (cfg.brokerUrl != null) setField("mqttUrl", String(cfg.brokerUrl).trim());
+          if (cfg.username != null) setField("mqttUser", cfg.username);
+          if (cfg.password != null) setField("mqttPass", cfg.password);
+          if (cfg.topic != null) setField("mqttTopic", String(cfg.topic).trim());
         }
 
-        function isNameGateClosed() {
-          return nameGateEl.hasAttribute("hidden");
+        function loadMqttConfigs() {
+          return fetch("./mqtt-config.local.json", { cache: "no-store" })
+            .then(function (r) {
+              return r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (cfg) {
+              applyMqttCfg(cfg || {}, false);
+              return fetch("./mqtt-config.json", { cache: "no-store" });
+            })
+            .then(function (r) {
+              return r && r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (cfg) {
+              applyMqttCfg(cfg || {}, true);
+              applyMqttCfg(BUILTIN_MQTT, true);
+            });
+        }
+
+        function whenMqttReady(fn) {
+          if (typeof mqtt !== "undefined") {
+            fn();
+            return;
+          }
+          var n = 0;
+          var t = setInterval(function () {
+            n++;
+            if (typeof mqtt !== "undefined") {
+              clearInterval(t);
+              fn();
+            }
+            if (n > 200) clearInterval(t);
+          }, 50);
         }
 
         function tryAutoConnect() {
-          if (!isNameGateClosed()) return;
           if (typeof mqtt === "undefined") return;
           if (client && client.connected) return;
           var url = $("mqttUrl").value.trim();
           var topic = getTopic();
           if (!url || !topic) return;
-          if (!getDisplayName()) return;
           mqttConnect();
         }
 
@@ -529,7 +494,7 @@
           pillEl.className = "pill " + state;
           pillTextEl.textContent =
             state === "connected"
-              ? "MQTT connected"
+              ? "Connected"
               : state === "connecting"
                 ? "Connecting…"
                 : state === "error"
@@ -542,7 +507,6 @@
 
         function setComposerEnabled(on) {
           $("btnSend").disabled = !on;
-          $("btnGemini").disabled = !on;
           composerInput.disabled = !on;
         }
 
@@ -618,10 +582,6 @@
           return JSON.stringify({ t: "msg", from: who, text: text });
         }
 
-        function buildAiPayload(text, model) {
-          return JSON.stringify({ t: "ai", model: model || "", text: text });
-        }
-
         function getTopic() {
           return $("mqttTopic").value.trim();
         }
@@ -651,7 +611,7 @@
             if (parsed.kind === "ai") {
               appendChat(
                 "ai",
-                "Gemini" + (parsed.model ? " · " + parsed.model : "") + " · " + t,
+                "AI" + (parsed.model ? " · " + parsed.model : "") + " · " + t,
                 parsed.text
               );
             } else {
@@ -719,31 +679,6 @@
           wireClientEvents(topic);
         }
 
-        function mqttDisconnect() {
-          if (client) {
-            try {
-              client.end(true);
-            } catch (e) {}
-            client = null;
-          }
-          setPill("disconnected");
-          setComposerEnabled(false);
-        }
-
-        $("geminiMode").addEventListener("change", function () {
-          var g = $("geminiMode").value === "gateway";
-          $("wrapGateway").style.display = g ? "block" : "none";
-          $("wrapDirect").style.display = g ? "none" : "block";
-        });
-        $("geminiMode").dispatchEvent(new Event("change"));
-
-        $("btnMqttConnect").addEventListener("click", mqttConnect);
-        $("btnMqttDisconnect").addEventListener("click", mqttDisconnect);
-
-        $("btnClearChat").addEventListener("click", function () {
-          chatEl.innerHTML = "";
-        });
-
         function doSend() {
           var topic = getTopic();
           if (!client || !client.connected || !topic) return;
@@ -762,81 +697,10 @@
           }
         });
 
-        async function callGemini(prompt) {
-          var mode = $("geminiMode").value;
-          if (mode === "gateway") {
-            var gw = $("gatewayUrl").value.trim();
-            if (!gw) throw new Error("Gateway URL required.");
-            var r = await fetch(gw, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prompt: prompt }),
-            });
-            var data = await r.json().catch(function () {
-              return {};
-            });
-            if (!r.ok) throw new Error(data.error || "HTTP " + r.status);
-            var text = data.text != null ? String(data.text) : "";
-            if (!text.trim()) throw new Error("Missing text in response.");
-            return { text: text, model: data.model || "gateway" };
-          }
-
-          var key = $("geminiKey").value.trim();
-          var model = $("geminiModel").value.trim() || "gemini-2.0-flash";
-          if (!key) throw new Error("API key required or use gateway.");
-
-          var url =
-            "https://generativelanguage.googleapis.com/v1beta/models/" +
-            encodeURIComponent(model) +
-            ":generateContent?key=" +
-            encodeURIComponent(key);
-
-          var r2 = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-            }),
+        loadMqttConfigs().then(function () {
+          whenMqttReady(function () {
+            tryAutoConnect();
           });
-          var data2 = await r2.json().catch(function () {
-            return {};
-          });
-          if (!r2.ok) {
-            var msg = data2.error && data2.error.message ? data2.error.message : "HTTP " + r2.status;
-            throw new Error(msg);
-          }
-          var parts = data2.candidates && data2.candidates[0] && data2.candidates[0].content && data2.candidates[0].content.parts;
-          var text2 = Array.isArray(parts)
-            ? parts
-                .map(function (p) {
-                  return typeof p.text === "string" ? p.text : "";
-                })
-                .join("")
-            : "";
-          if (!text2.trim()) throw new Error("Empty model output.");
-          return { text: text2, model: model };
-        }
-
-        $("btnGemini").addEventListener("click", async function () {
-          if (!client || !client.connected) return;
-          var topic = getTopic();
-          var q = composerInput.value.trim();
-          if (!q) return;
-          $("btnGemini").disabled = true;
-          try {
-            var out = await callGemini(q);
-            composerInput.value = "";
-            var jsonBody = buildAiPayload(out.text, out.model);
-            publishJson(topic, out.text, jsonBody, "Gemini");
-          } catch (e) {
-            appendChat("system", "", errString(e));
-          } finally {
-            $("btnGemini").disabled = !client || !client.connected;
-          }
-        });
-
-        loadMqttLocalConfig().then(function () {
-          tryAutoConnect();
         });
       })();
     </script>
