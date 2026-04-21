@@ -278,6 +278,18 @@
         max-height: 10rem;
         resize: vertical;
       }
+      .composer .btn-gemini {
+        flex-shrink: 0;
+        align-self: flex-end;
+        height: 2.75rem;
+        padding-inline: 0.85rem;
+        background: var(--c-deep);
+        color: var(--c-cream);
+        border-color: var(--c-light);
+      }
+      .composer .btn-gemini:hover:not(:disabled) {
+        background: var(--c-mid);
+      }
       .composer .primary {
         flex-shrink: 0;
         align-self: flex-end;
@@ -373,6 +385,11 @@
         .composer textarea {
           font-size: 1rem;
         }
+        .composer .btn-gemini {
+          min-height: 2.75rem;
+          height: auto;
+          min-width: 4.25rem;
+        }
         .composer .primary {
           min-height: 2.75rem;
           height: auto;
@@ -434,6 +451,7 @@
         placeholder="Message…"
         disabled
       ></textarea>
+      <button type="button" class="btn-gemini" id="btnGemini" disabled>Gemini</button>
       <button type="button" class="primary" id="btnSend" disabled>Send</button>
     </div>
 
@@ -455,12 +473,44 @@
         var nameGateEl = $("nameGate");
         var displayBadgeEl = $("displayBadge");
 
+        var geminiApiKey = "";
+        var geminiModel = "gemini-2.0-flash";
+
         var BUILTIN_MQTT = {
           brokerUrl: "wss://2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud:8884/mqtt",
           username: "test2",
           password: "Aa123456",
           topic: "blackout/mqtest/chat",
         };
+
+        function loadGeminiConfig() {
+          return fetch("./gemini-config.local.json", { cache: "no-store" })
+            .then(function (r) {
+              return r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (cfg) {
+              if (cfg && typeof cfg.apiKey === "string" && cfg.apiKey.trim())
+                geminiApiKey = cfg.apiKey.trim();
+              if (cfg && typeof cfg.model === "string" && cfg.model.trim())
+                geminiModel = cfg.model.trim();
+              return fetch("./gemini-config.json", { cache: "no-store" });
+            })
+            .then(function (r) {
+              return r && r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (cfg) {
+              if (!cfg || typeof cfg !== "object") return;
+              if (typeof cfg.apiKey === "string" && cfg.apiKey.trim() && !geminiApiKey)
+                geminiApiKey = cfg.apiKey.trim();
+              if (typeof cfg.model === "string" && cfg.model.trim()) geminiModel = cfg.model.trim();
+            });
+        }
 
         function applyMqttCfg(cfg, onlyFillEmpty) {
           if (!cfg || typeof cfg !== "object") return;
@@ -602,6 +652,7 @@
 
         function setComposerEnabled(on) {
           $("btnSend").disabled = !on;
+          $("btnGemini").disabled = !on || !geminiApiKey;
           composerInput.disabled = !on;
         }
 
@@ -705,6 +756,10 @@
         function buildUserPayload(text) {
           var who = getDisplayName() || clientId;
           return JSON.stringify({ t: "msg", from: who, text: text });
+        }
+
+        function buildAiPayload(text, model) {
+          return JSON.stringify({ t: "ai", model: model || "", text: text });
         }
 
         function getTopic() {
@@ -818,7 +873,63 @@
           }
         });
 
-        loadMqttConfigs().then(function () {
+        async function callGemini(prompt) {
+          if (!geminiApiKey) {
+            throw new Error(
+              "No Gemini API key. Copy gemini-config.example.json to gemini-config.local.json and add your key."
+            );
+          }
+          var model = geminiModel || "gemini-2.0-flash";
+          var url =
+            "https://generativelanguage.googleapis.com/v1beta/models/" +
+            encodeURIComponent(model) +
+            ":generateContent?key=" +
+            encodeURIComponent(geminiApiKey);
+          var r = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+            }),
+          });
+          var data = await r.json().catch(function () {
+            return {};
+          });
+          if (!r.ok) {
+            var msg = data.error && data.error.message ? data.error.message : "HTTP " + r.status;
+            throw new Error(msg);
+          }
+          var parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+          var text = Array.isArray(parts)
+            ? parts
+                .map(function (p) {
+                  return typeof p.text === "string" ? p.text : "";
+                })
+                .join("")
+            : "";
+          if (!text.trim()) throw new Error("Empty model response.");
+          return { text: text, model: model };
+        }
+
+        $("btnGemini").addEventListener("click", async function () {
+          if (!client || !client.connected) return;
+          var topic = getTopic();
+          var q = composerInput.value.trim();
+          if (!q) return;
+          $("btnGemini").disabled = true;
+          try {
+            var out = await callGemini(q);
+            composerInput.value = "";
+            var jsonBody = buildAiPayload(out.text, out.model);
+            publishJson(topic, out.text, jsonBody, "AI");
+          } catch (e) {
+            appendChat("system", "", errString(e));
+          } finally {
+            $("btnGemini").disabled = !client || !client.connected || !geminiApiKey;
+          }
+        });
+
+        Promise.all([loadMqttConfigs(), loadGeminiConfig()]).then(function () {
           whenMqttReady(function () {
             tryAutoConnect();
           });
