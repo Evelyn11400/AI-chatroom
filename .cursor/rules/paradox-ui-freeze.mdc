@@ -1,0 +1,6 @@
+---
+description: Freeze Paradox Chatroom branding/header unless explicitly requested
+globs: index.html
+---
+
+- Do not change the top bar, `Paradox Chatroom` title / logo typography, status pill styling, palette, fonts, or other layout/visual details unless the user clearly asks for that specific change in the current task.
