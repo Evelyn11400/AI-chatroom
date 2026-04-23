@@ -457,44 +457,12 @@
         var nameGateEl = $("nameGate");
         var displayBadgeEl = $("displayBadge");
 
-        var geminiApiKey = "";
-        var geminiModel = "gemini-2.0-flash";
-
         var BUILTIN_MQTT = {
           brokerUrl: "wss://2ec7c29478854652aefa31c92c09f792.s1.eu.hivemq.cloud:8884/mqtt",
           username: "test2",
           password: "Aa123456",
           topic: "blackout/mqtest/chat",
         };
-
-        function loadGeminiConfig() {
-          return fetch("./gemini-config.local.json", { cache: "no-store" })
-            .then(function (r) {
-              return r.ok ? r.json() : null;
-            })
-            .catch(function () {
-              return null;
-            })
-            .then(function (cfg) {
-              if (cfg && typeof cfg.apiKey === "string" && cfg.apiKey.trim())
-                geminiApiKey = cfg.apiKey.trim();
-              if (cfg && typeof cfg.model === "string" && cfg.model.trim())
-                geminiModel = cfg.model.trim();
-              return fetch("./gemini-config.json", { cache: "no-store" });
-            })
-            .then(function (r) {
-              return r && r.ok ? r.json() : null;
-            })
-            .catch(function () {
-              return null;
-            })
-            .then(function (cfg) {
-              if (!cfg || typeof cfg !== "object") return;
-              if (typeof cfg.apiKey === "string" && cfg.apiKey.trim() && !geminiApiKey)
-                geminiApiKey = cfg.apiKey.trim();
-              if (typeof cfg.model === "string" && cfg.model.trim()) geminiModel = cfg.model.trim();
-            });
-        }
 
         function applyMqttCfg(cfg, onlyFillEmpty) {
           if (!cfg || typeof cfg !== "object") return;
@@ -636,7 +604,7 @@
 
         function setComposerEnabled(on) {
           $("btnSend").disabled = !on;
-          $("btnGemini").disabled = !on || !geminiApiKey;
+          $("btnGemini").disabled = !on;
           composerInput.disabled = !on;
         }
 
@@ -858,53 +826,21 @@
         });
 
         async function callGemini(prompt) {
-          if (!geminiApiKey) {
-            throw new Error(
-              "No Gemini API key. Copy gemini-config.example.json to gemini-config.local.json and add your key."
-            );
-          }
-          var model = geminiModel || "gemini-2.0-flash";
-          var url =
-            "https://generativelanguage.googleapis.com/v1beta/models/" +
-            encodeURIComponent(model) +
-            ":generateContent?key=" +
-            encodeURIComponent(geminiApiKey);
-          var systemText =
-            "You are replying in a public group chat (MQTT). The user message is their instruction or question to you.\n\n" +
-            "Rules:\n" +
-            "- Write ONLY the message you would send as a chat bubble: natural, casual, human chat tone.\n" +
-            "- Do NOT show your thinking, planning, step-by-step reasoning, or analysis.\n" +
-            "- Do NOT use phrases like \"Here is\", \"I'll\", \"Sure, I can\", \"As an AI\", apologies, or meta talk about the task.\n" +
-            "- Do NOT add unrelated filler, disclaimers, or closing remarks unless they fit normal chat.\n" +
-            "- No markdown headings or lecture format unless the user clearly wants that in a chatty way.\n" +
-            "- Keep it concise like instant messaging unless the user explicitly asks for a longer answer.\n" +
-            "- Plain text only, ready to broadcast as one chat line.";
-
-          var r = await fetch(url, {
+          var r = await fetch("/api/gemini", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: systemText }] },
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-            }),
+            body: JSON.stringify({ prompt: prompt }),
           });
           var data = await r.json().catch(function () {
             return {};
           });
           if (!r.ok) {
-            var msg = data.error && data.error.message ? data.error.message : "HTTP " + r.status;
-            throw new Error(msg);
+            throw new Error(data.error || "HTTP " + r.status);
           }
-          var parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
-          var text = Array.isArray(parts)
-            ? parts
-                .map(function (p) {
-                  return typeof p.text === "string" ? p.text : "";
-                })
-                .join("")
-            : "";
-          if (!text.trim()) throw new Error("Empty model response.");
-          return { text: text, model: model };
+          if (!data.text || !String(data.text).trim()) {
+            throw new Error("Empty model response.");
+          }
+          return { text: data.text, model: data.model || "gemini" };
         }
 
         $("btnGemini").addEventListener("click", async function () {
@@ -921,11 +857,11 @@
           } catch (e) {
             appendChat("system", "", errString(e));
           } finally {
-            $("btnGemini").disabled = !client || !client.connected || !geminiApiKey;
+            $("btnGemini").disabled = !client || !client.connected;
           }
         });
 
-        Promise.all([loadMqttConfigs(), loadGeminiConfig()]).then(function () {
+        loadMqttConfigs().then(function () {
           whenMqttReady(function () {
             tryAutoConnect();
           });
