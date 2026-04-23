@@ -4,6 +4,30 @@
  *   GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.5-flash)
  */
 
+/** @param {string} text @param {number} maxWords */
+function trimToMaxWords(text, maxWords) {
+  var s = String(text).trim();
+  if (!s) return s;
+  if (typeof Intl === "undefined" || typeof Intl.Segmenter !== "function") {
+    var parts = s.split(/\s+/).filter(Boolean);
+    if (parts.length <= maxWords) return s;
+    return parts.slice(0, maxWords).join(" ");
+  }
+  var segmenter = new Intl.Segmenter("und", { granularity: "word" });
+  var n = 0;
+  var end = s.length;
+  for (var seg of segmenter.segment(s)) {
+    if (seg.isWordLike) {
+      n++;
+      if (n >= maxWords) {
+        end = seg.index + seg.segment.length;
+        break;
+      }
+    }
+  }
+  return s.slice(0, end).trim();
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
 
@@ -49,7 +73,7 @@ module.exports = async function handler(req, res) {
     "- Do NOT show your thinking planning step by step reasoning or analysis\n" +
     "- Do NOT use robotic openers over polite filler apologies or meta talk about being an assistant\n" +
     "- No markdown headings or bullet lists unless the user clearly wants that in chat\n" +
-    "- Keep it concise like IM unless they explicitly ask for more\n" +
+    "- Hard length cap: your entire reply must be 10 words or fewer count each word like segmenting for English spaces and for Chinese each 词 as one unit stop at 10\n" +
     "- Plain text only ready to broadcast as one chat line";
 
   const url =
@@ -65,6 +89,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemText }] },
         contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 80 },
       }),
     });
 
@@ -88,11 +113,12 @@ module.exports = async function handler(req, res) {
           .join("")
       : "";
 
-    if (!String(text).trim()) {
+    var out = trimToMaxWords(text, 10);
+    if (!String(out).trim()) {
       return res.status(502).json({ error: "Empty model response" });
     }
 
-    return res.status(200).json({ text: text, model: model });
+    return res.status(200).json({ text: out, model: model });
   } catch (e) {
     return res.status(502).json({
       error: e instanceof Error ? e.message : String(e),
