@@ -632,6 +632,13 @@
           return ch.toLocaleUpperCase();
         }
 
+        function randomUpperLatinLetter() {
+          var u32 = new Uint32Array(1);
+          if (typeof crypto !== "undefined" && crypto.getRandomValues) crypto.getRandomValues(u32);
+          else u32[0] = (Math.random() * 0x100000000) >>> 0;
+          return String.fromCharCode(65 + (u32[0] % 26));
+        }
+
         function avatarSolidColorForUser(userKey) {
           var h = hashStr(String(userKey || "?"));
           var hue = 204 + (h % 26);
@@ -640,13 +647,14 @@
           return "hsl(" + hue + ", " + sat + "%, " + lit + "%)";
         }
 
-        function makeAvatarEl(userKey) {
+        function makeAvatarEl(userKey, opts) {
+          opts = opts || {};
           var el = document.createElement("div");
           el.className = "avatar";
           el.setAttribute("aria-hidden", "true");
           el.style.background = avatarSolidColorForUser(userKey);
           var span = document.createElement("span");
-          span.textContent = firstInitial(userKey);
+          span.textContent = opts.randomInitial ? randomUpperLatinLetter() : firstInitial(userKey);
           el.appendChild(span);
           return el;
         }
@@ -654,7 +662,7 @@
         function appendMessageWithAvatar(kind, body, userKey) {
           var row = document.createElement("div");
           row.className = "msg-row " + kind;
-          row.appendChild(makeAvatarEl(userKey));
+          row.appendChild(makeAvatarEl(userKey, kind === "ai" ? { randomInitial: true } : null));
           var bubble = document.createElement("div");
           bubble.className = "msg " + kind;
           bubble.textContent = body;
@@ -678,7 +686,7 @@
         function appendOutgoingChat(body, userKey) {
           var row = document.createElement("div");
           row.className = "msg-row out";
-          row.appendChild(makeAvatarEl(userKey));
+          row.appendChild(makeAvatarEl(userKey, userKey === "AI" ? { randomInitial: true } : null));
           var bubble = document.createElement("div");
           bubble.className = "msg out";
           bubble.textContent = body;
