@@ -1,0 +1,7 @@
+{
+  "name": "paradox-chatroom",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}

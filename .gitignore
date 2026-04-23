@@ -1,2 +1,6 @@
 mqtt-config.local.json
 gemini-config.local.json
+
+.env
+.env.local
+.env.*.local
