@@ -1,7 +1,7 @@
 /**
  * Vercel Serverless Function — POST /api/gemini
  * Variables: Vercel → Project → Settings → Environment Variables
- *   GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.0-flash)
+ *   GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.5-flash)
  */
 
 module.exports = async function handler(req, res) {
@@ -35,7 +35,7 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Prompt too long" });
   }
 
-  const model = (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim();
+  const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
 
   const systemText =
     "You are replying in a public group chat (MQTT). The user message is their instruction or question to you.\n\n" +
