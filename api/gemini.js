@@ -1,6 +1,7 @@
 /**
  * Vercel Serverless Function — POST /api/gemini
- * Env: GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.0-flash)
+ * Variables: Vercel → Project → Settings → Environment Variables
+ *   GEMINI_API_KEY (required), GEMINI_MODEL (optional, default gemini-2.0-flash)
  */
 
 module.exports = async function handler(req, res) {
