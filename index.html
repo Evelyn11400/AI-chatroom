@@ -601,6 +601,20 @@
 
         var lastSentBody = "";
         var lastSentAt = 0;
+        /** Latest non-system chat bubble text (for empty Gemini prompt). */
+        var lastChatLineForGemini = "";
+
+        function recordLastChatLine(text) {
+          var t = String(text || "").trim();
+          if (t) lastChatLineForGemini = t;
+        }
+
+        function clipForGeminiContext(text, maxLen) {
+          var s = String(text || "");
+          maxLen = maxLen || 8000;
+          if (s.length <= maxLen) return s;
+          return s.slice(0, maxLen);
+        }
 
         function setComposerEnabled(on) {
           $("btnSend").disabled = !on;
@@ -669,6 +683,7 @@
           row.appendChild(bubble);
           chatEl.appendChild(row);
           chatEl.scrollTop = chatEl.scrollHeight;
+          recordLastChatLine(body);
         }
 
         function appendChat(kind, meta, body) {
@@ -693,6 +708,7 @@
           row.appendChild(bubble);
           chatEl.appendChild(row);
           chatEl.scrollTop = chatEl.scrollHeight;
+          recordLastChatLine(body);
           return {
             setDelivered: function () {},
             setFailed: function (msg) {
@@ -854,11 +870,25 @@
         $("btnGemini").addEventListener("click", async function () {
           if (!client || !client.connected) return;
           var topic = getTopic();
+          if (!topic) {
+            appendChat("system", "", "Topic required for Gemini.");
+            return;
+          }
           var q = composerInput.value.trim();
-          if (!q) return;
+          var prompt;
+          if (q) {
+            prompt = q;
+          } else if (lastChatLineForGemini.trim()) {
+            prompt =
+              "The last line in the group chat is below reply in casual spoken style like texting keep it natural\n\n" +
+              clipForGeminiContext(lastChatLineForGemini);
+          } else {
+            prompt =
+              "The chat is empty so far say one very short casual colloquial greeting like you just joined the room spoken vibe no formal opener";
+          }
           $("btnGemini").disabled = true;
           try {
-            var out = await callGemini(q);
+            var out = await callGemini(prompt);
             composerInput.value = "";
             var jsonBody = buildAiPayload(out.text, out.model);
             publishJson(topic, out.text, jsonBody, "AI");
