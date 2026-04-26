@@ -661,12 +661,15 @@
           return "hsl(" + hue + ", " + sat + "%, " + lit + "%)";
         }
 
+        /** Same avatar fill for every participant including AI (letters still differ). */
+        var AVATAR_UNIFIED_COLOR_KEY = "paradox-peer";
+
         function makeAvatarEl(userKey, opts) {
           opts = opts || {};
           var el = document.createElement("div");
           el.className = "avatar";
           el.setAttribute("aria-hidden", "true");
-          el.style.background = avatarSolidColorForUser(userKey);
+          el.style.background = avatarSolidColorForUser(AVATAR_UNIFIED_COLOR_KEY);
           var span = document.createElement("span");
           span.textContent = opts.randomInitial ? randomUpperLatinLetter() : firstInitial(userKey);
           el.appendChild(span);
