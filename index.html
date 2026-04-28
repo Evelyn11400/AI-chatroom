@@ -540,6 +540,7 @@
 
         function tryAutoConnect() {
           if (typeof mqtt === "undefined") return;
+          if (!nameGateEl.hasAttribute("hidden")) return;
           if (client && client.connected) return;
           var url = $("mqttUrl").value.trim();
           var topic = getTopic();
@@ -593,8 +594,7 @@
           tryAutoConnect();
         }
 
-        if (!getDisplayName()) openNameGate();
-        else syncDisplayBadge();
+        openNameGate();
 
         $("btnNameContinue").addEventListener("click", submitDisplayName);
         $("displayNameInput").addEventListener("keydown", function (e) {
