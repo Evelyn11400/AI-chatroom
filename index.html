@@ -331,6 +331,16 @@
       .name-gate-card input {
         margin-bottom: 0.75rem;
       }
+      .name-gate-rules {
+        margin: 0 0 0.75rem;
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--c-light);
+        opacity: 0.95;
+      }
+      .name-gate-rules .rule {
+        margin: 0.25rem 0;
+      }
       .name-gate-card button.primary {
         width: 100%;
       }
@@ -408,6 +418,13 @@
           spellcheck="false"
           autocomplete="nickname"
         />
+        <div class="name-gate-rules" aria-label="Chat rules">
+          <div class="rule">- You can pretend to be AI and send messages</div>
+          <div class="rule">- Or use AI to pretend to be a human and send messages</div>
+          <div class="rule">- Click the Gemini button to auto reply to the last message</div>
+          <div class="rule">- Type a prompt then click Gemini to control what the AI says</div>
+          <div class="rule">- So who is the AI really</div>
+        </div>
         <button type="button" class="primary" id="btnNameContinue">Continue</button>
       </div>
     </div>
