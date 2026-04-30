@@ -375,18 +375,24 @@
           padding: 0.5rem 0.6rem;
           padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
           gap: 0.45rem;
+          align-items: stretch;
         }
         .composer textarea {
           font-size: 1rem;
+          height: 2.75rem;
+          min-height: 2.75rem;
+          max-height: 2.75rem;
+          resize: none;
+          overflow: hidden;
         }
         .composer .btn-gemini {
           min-height: 2.75rem;
-          height: auto;
+          height: 2.75rem;
           min-width: 4.25rem;
         }
         .composer .primary {
           min-height: 2.75rem;
-          height: auto;
+          height: 2.75rem;
           min-width: 4.5rem;
         }
         .name-gate {
@@ -562,6 +568,23 @@
           } catch (e) {}
         }
 
+        function syncComposerButtonLabels() {
+          var geminiBtn = $("btnGemini");
+          var sendBtn = $("btnSend");
+          if (!geminiBtn || !sendBtn) return;
+          var isMobile = false;
+          try {
+            isMobile = window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+          } catch (e) {}
+          if (isMobile) {
+            geminiBtn.textContent = "AI";
+            sendBtn.textContent = "Human";
+          } else {
+            geminiBtn.textContent = "Send AI";
+            sendBtn.textContent = "Send Human";
+          }
+        }
+
         function syncDisplayBadge() {
           var n = getDisplayName();
           displayBadgeEl.textContent = n ? " · " + n : "";
@@ -603,6 +626,9 @@
             submitDisplayName();
           }
         });
+
+        syncComposerButtonLabels();
+        window.addEventListener("resize", syncComposerButtonLabels);
 
         function setPill(state) {
           pillEl.className = "pill " + state;
