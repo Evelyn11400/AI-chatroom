@@ -382,12 +382,14 @@
         .composer .btn-gemini {
           min-height: 2.75rem;
           height: auto;
-          min-width: 4.25rem;
+          min-width: 3.25rem;
+          padding-inline: 0.7rem;
         }
         .composer .primary {
           min-height: 2.75rem;
           height: auto;
-          min-width: 4.5rem;
+          min-width: 3.25rem;
+          padding-inline: 0.7rem;
         }
         .name-gate {
           padding: 0.65rem;
@@ -562,6 +564,23 @@
           } catch (e) {}
         }
 
+        function syncComposerButtonLabels() {
+          var aiBtn = $("btnGemini");
+          var humanBtn = $("btnSend");
+          if (!aiBtn || !humanBtn) return;
+          var isMobile = false;
+          try {
+            isMobile = window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+          } catch (e) {}
+          if (isMobile) {
+            aiBtn.textContent = "AI";
+            humanBtn.textContent = "Human";
+          } else {
+            aiBtn.textContent = "Send AI";
+            humanBtn.textContent = "Send Human";
+          }
+        }
+
         function syncDisplayBadge() {
           var n = getDisplayName();
           displayBadgeEl.textContent = n ? " · " + n : "";
@@ -603,6 +622,9 @@
             submitDisplayName();
           }
         });
+
+        syncComposerButtonLabels();
+        window.addEventListener("resize", syncComposerButtonLabels);
 
         function setPill(state) {
           pillEl.className = "pill " + state;
